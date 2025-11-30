@@ -1,196 +1,332 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="bn" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>অ্যাডমিন প্যানেল - Money Fair</title>
+    <title>Admin Panel-Money Fair</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+    <!-- Custom Config for Tailwind Colors & Dark Mode -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1', // Indigo
+                        secondary: '#8b5cf6', // Violet
+                        dark: '#0f172a', // Slate 900
+                        darker: '#020617', // Slate 950
+                    },
+                    fontFamily: {
+                        sans: ['Hind Siliguri', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body { font-family: 'Hind Siliguri', sans-serif; background-color: #f3f4f6; }
-        .sidebar-active { background: linear-gradient(90deg, #4f46e5, #4338ca); border-right: 3px solid #fbbf24; }
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Sidebar Styling */
+        .sidebar-item { transition: all 0.2s ease; position: relative; overflow: hidden; border-radius: 8px; margin-bottom: 4px; }
+        .sidebar-active { 
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.15) 0%, transparent 100%); 
+            border-left: 3px solid #6366f1; 
+            color: #818cf8 !important; 
+        }
+        .nav-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; padding: 16px 16px 8px; }
+
+        /* Premium Card */
+        .premium-card {
+            border-radius: 16px; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            border: 1px solid;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        /* Input Styling */
+        .admin-input {
+            width: 100%; padding: 10px 14px; border-radius: 8px;
+            border: 1px solid; outline: none; transition: all 0.2s;
+        }
+        
+        /* Chat Bubbles */
+        .msg-bubble { max-width: 75%; padding: 10px 14px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .msg-user { border-radius: 16px 16px 16px 2px; border: 1px solid; }
+        .msg-admin { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border-radius: 16px 16px 2px 16px; }
+
         .sidebar-closed { transform: translateX(-100%); }
-        #sidebar { transition: transform 0.3s ease-in-out; }
+        #sidebar, #chat-window-panel { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Transition for Dark Mode */
+        body, .premium-card, .admin-input, #admin-wrapper { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="h-screen overflow-hidden flex flex-col text-slate-700 bg-slate-50 dark:bg-darker dark:text-slate-300">
 
     <!-- Login Overlay -->
-    <div id="admin-login-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/95 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
+    <div id="admin-login-overlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm">
             <div class="text-center mb-6">
-                <i class="fa-solid fa-user-shield text-5xl text-blue-600 mb-2"></i>
-                <h2 class="text-2xl font-bold text-gray-800">অ্যাডমিন লগিন</h2>
+                <div class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl"><i class="fa-solid fa-lock"></i></div>
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white" data-i18n="admin_login">Admin Login</h2>
             </div>
             <div class="space-y-4">
-                <input type="email" id="admin-email" placeholder="ইমেইল" class="w-full p-3 border rounded-lg outline-none">
-                <input type="password" id="admin-pass" placeholder="পাসওয়ার্ড" class="w-full p-3 border rounded-lg outline-none">
-                <button onclick="adminLogin()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">লগিন</button>
+                <input type="email" id="admin-email" placeholder="Email" class="admin-input bg-slate-50 border-slate-200 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                <input type="password" id="admin-pass" placeholder="Password" class="admin-input bg-slate-50 border-slate-200 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                <button onclick="adminLogin()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition" data-i18n="login_btn">Access Dashboard</button>
             </div>
         </div>
     </div>
 
-    <!-- Dashboard Wrapper -->
-    <div id="admin-wrapper" class="hidden flex h-screen overflow-hidden relative">
-        <aside id="sidebar" class="sidebar-closed absolute md:relative md:translate-x-0 w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col shadow-2xl z-30 h-full">
-            <div class="p-6 flex items-center justify-between border-b border-slate-800">
-                <div class="flex items-center gap-3"><i class="fa-solid fa-shield-cat text-3xl text-yellow-400"></i><h1 class="text-2xl font-bold">অ্যাডমিন</h1></div>
-                <button class="md:hidden text-gray-400" onclick="toggleSidebar()"><i class="fa-solid fa-xmark"></i></button>
+    <!-- Main Layout -->
+    <div id="admin-wrapper" class="hidden flex h-full relative">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar-closed absolute md:relative w-64 bg-[#0f172a] text-slate-400 h-full shadow-xl z-40 flex flex-col border-r border-slate-800">
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-cube text-indigo-500 text-xl"></i>
+                    <h1 class="text-lg font-bold text-white tracking-wide">Money Fair</h1>
+                </div>
+                <button class="md:hidden text-slate-400 hover:text-white" onclick="toggleSidebar()"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <nav class="mt-6 flex-grow space-y-2 px-4 overflow-y-auto">
-                <a href="#" class="nav-link sidebar-active flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition" onclick="showSection('dashboard', this)"><i class="fa-solid fa-chart-line"></i> ড্যাশবোর্ড</a>
-                <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition text-slate-400" onclick="showSection('users', this)"><i class="fa-solid fa-users"></i> ইউজার লিস্ট</a>
-                <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition text-slate-400" onclick="showSection('tasks', this)"><i class="fa-solid fa-list-check"></i> টাস্ক ও নোটিশ</a>
-                <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition text-slate-400" onclick="showSection('withdrawals', this)"><i class="fa-solid fa-money-bill-transfer"></i> পেমেন্ট</a>
-                <a href="#" class="nav-link flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition text-slate-400" onclick="showSection('settings', this)"><i class="fa-solid fa-gears"></i> সেটিংস</a>
-                <button onclick="adminLogout()" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600/20 text-red-400 mt-10"><i class="fa-solid fa-power-off"></i> লগআউট</button>
+            
+            <nav class="flex-1 overflow-y-auto px-3 pb-4">
+                
+                <p class="nav-label" data-i18n="overview">Overview</p>
+                <a href="#" class="sidebar-item nav-link sidebar-active flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('dashboard', this)">
+                    <i class="fa-solid fa-chart-line w-5 text-center"></i> <span data-i18n="dashboard">ড্যাশবোর্ড</span>
+                </a>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('users', this)">
+                    <i class="fa-solid fa-users w-5 text-center"></i> <span data-i18n="user_list">ইউজার লিস্ট</span>
+                </a>
+
+                <p class="nav-label" data-i18n="task_management">Task Management</p>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('limits', this)">
+                    <i class="fa-solid fa-gauge-high w-5 text-center"></i> <span data-i18n="task_limits">টাস্ক লিমিট</span>
+                </a>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('notices', this)">
+                    <i class="fa-solid fa-bullhorn w-5 text-center"></i> <span data-i18n="notice_board">নোটিশ বোর্ড</span>
+                </a>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('social', this)">
+                    <i class="fa-solid fa-share-nodes w-5 text-center"></i> <span data-i18n="social_task">সোশ্যাল টাস্ক</span>
+                </a>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('rules', this)">
+                    <i class="fa-solid fa-book-open w-5 text-center"></i> <span data-i18n="app_rules">অ্যাপের নিয়ম</span>
+                </a>
+
+                <p class="nav-label" data-i18n="finance">Finance</p>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('withdrawals', this)">
+                    <i class="fa-solid fa-money-bill-transfer w-5 text-center"></i> <span data-i18n="pay_req">পেমেন্ট রিকোয়েস্ট</span>
+                    <span id="nav-pending-count" class="hidden bg-yellow-500 text-white text-[10px] font-bold px-1.5 rounded ml-auto">0</span>
+                </a>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('payments', this)">
+                    <i class="fa-solid fa-credit-card w-5 text-center"></i> <span data-i18n="pay_method">পেমেন্ট মেথড</span>
+                </a>
+
+                <p class="nav-label" data-i18n="system">System</p>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('chat', this)">
+                    <i class="fa-solid fa-comments w-5 text-center"></i> <span data-i18n="live_chat">লাইভ চ্যাট</span>
+                    <span id="nav-unread-badge" class="hidden bg-red-500 text-white text-[10px] font-bold px-1.5 rounded ml-auto animate-pulse">0</span>
+                </a>
+                <a href="#" class="sidebar-item nav-link flex items-center gap-3 px-3 py-2.5 hover:bg-slate-800 hover:text-white" onclick="showSection('app-settings', this)">
+                    <i class="fa-solid fa-sliders w-5 text-center"></i> <span data-i18n="settings">অ্যাপ সেটিংস</span>
+                </a>
             </nav>
+
+            <!-- TOGGLE BUTTONS (Theme & Language) -->
+            <div class="p-3 border-t border-slate-800 bg-slate-900/50">
+                <div class="flex gap-2 mb-2">
+                    <button onclick="toggleTheme()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-xs font-bold transition">
+                        <i class="fa-solid fa-moon dark:hidden"></i><i class="fa-solid fa-sun hidden dark:inline"></i> <span data-i18n="mode">Mode</span>
+                    </button>
+                    <button onclick="toggleLanguage()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-2 rounded-lg text-xs font-bold transition">
+                        <i class="fa-solid fa-globe"></i> <span id="lang-display">EN</span>
+                    </button>
+                </div>
+                <button onclick="adminLogout()" class="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500 hover:text-white transition-all text-sm font-bold border border-slate-700">
+                    <i class="fa-solid fa-power-off"></i> <span data-i18n="logout">Logout</span>
+                </button>
+            </div>
         </aside>
 
-        <div class="flex-1 flex flex-col h-screen overflow-hidden">
-            <header class="bg-white shadow-sm p-4 flex justify-between items-center z-10">
-                <button onclick="toggleSidebar()" class="md:hidden text-slate-800 text-2xl"><i class="fa-solid fa-bars"></i></button>
-                <h2 class="text-xl font-bold text-slate-700">কন্ট্রোল প্যানেল</h2>
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col h-full overflow-hidden">
+            <header class="md:hidden bg-white dark:bg-slate-800 shadow-sm p-4 flex justify-between items-center z-30 border-b border-gray-100 dark:border-slate-700">
+                <button onclick="toggleSidebar()" class="text-slate-700 dark:text-slate-300 text-xl"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="text-base font-bold text-slate-800 dark:text-white" data-i18n="dashboard">Dashboard</h2>
+                <div class="w-6"></div>
             </header>
 
-            <main class="flex-1 overflow-y-auto p-4 md:p-6">
+            <main class="flex-1 overflow-hidden relative">
+                
                 <!-- Dashboard -->
-                <div id="dashboard-section" class="section block">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-blue-600 p-6 rounded-2xl shadow-lg text-white">
-                            <h3 class="opacity-90">মোট ইউজার</h3>
-                            <p class="text-4xl font-bold mt-2" id="stat-total-users">Loading...</p>
+                <div id="dashboard-section" class="section block h-full overflow-y-auto p-4 md:p-8">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-2xl shadow-lg text-white">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-blue-100 text-xs font-bold uppercase" data-i18n="total_users">Total Users</p><h3 class="text-3xl font-bold mt-1" id="stat-total-users">...</h3></div>
+                                <i class="fa-solid fa-users text-4xl text-blue-400 opacity-50"></i>
+                            </div>
                         </div>
-                        <div class="bg-purple-600 p-6 rounded-2xl shadow-lg text-white">
-                            <h3 class="opacity-90">পেন্ডিং পেমেন্ট</h3>
-                            <p class="text-4xl font-bold mt-2" id="stat-pending-withdraw">Loading...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User List -->
-                <div id="users-section" class="section hidden">
-                    <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                        <div class="p-5 border-b bg-gray-50 flex justify-between items-center">
-                            <h3 class="font-bold text-gray-700">সকল ইউজার</h3>
-                            <span class="text-xs text-gray-500">Last 50 users</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-gray-100 uppercase font-bold text-gray-600">
-                                    <tr><th class="p-4">নাম</th><th class="p-4">ইমেইল</th><th class="p-4">রেফার কোড</th><th class="p-4">ব্যালেন্স</th></tr>
-                                </thead>
-                                <tbody id="users-table-body" class="divide-y"></tbody>
-                            </table>
+                        <div class="bg-gradient-to-r from-emerald-500 to-teal-500 p-6 rounded-2xl shadow-lg text-white">
+                            <div class="flex justify-between items-center">
+                                <div><p class="text-emerald-100 text-xs font-bold uppercase" data-i18n="pending_pay">Pending Payments</p><h3 class="text-3xl font-bold mt-1" id="stat-pending-withdraw">...</h3></div>
+                                <i class="fa-solid fa-wallet text-4xl text-emerald-300 opacity-50"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Task Control -->
-                <div id="tasks-section" class="section hidden space-y-6">
-                    <!-- Notice Board -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border">
-                        <h3 class="text-xl font-bold mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-bullhorn text-orange-500"></i> মেইন নোটিশ বোর্ড</h3>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" id="notice-text" placeholder="নোটিশ লিখুন..." class="flex-1 p-2 border rounded">
-                            <button onclick="addNotice()" class="bg-orange-600 text-white px-4 py-2 rounded font-bold">যোগ করুন</button>
+                <!-- Users -->
+                <div id="users-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <div class="p-5 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0"><h3 class="font-bold text-slate-800 dark:text-white" data-i18n="user_list">User List</h3></div>
+                        <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300"><tr><th class="p-4" data-i18n="name">Name</th><th class="p-4" data-i18n="email">Email</th><th class="p-4" data-i18n="refer">Refer</th><th class="p-4" data-i18n="balance">Balance</th></tr></thead><tbody id="users-table-body" class="divide-y divide-gray-100 dark:divide-slate-700"></tbody></table></div>
+                    </div>
+                </div>
+
+                <!-- 1. Task Limits Section -->
+                <div id="limits-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 p-6 max-w-3xl mx-auto">
+                        <h3 class="text-lg font-bold mb-6 text-slate-800 dark:text-white border-b dark:border-slate-700 pb-2" data-i18n="task_limits">Task Limits & Rewards</h3>
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                                <div class="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center"><i class="fa-solid fa-play"></i></div>
+                                <div class="flex-1 grid grid-cols-2 gap-4">
+                                    <div><label class="text-xs font-bold text-slate-400" data-i18n="limit">Limit</label><input id="limit-video" class="admin-input mt-1 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-white"></div>
+                                    <div><label class="text-xs font-bold text-slate-400" data-i18n="point">Points</label><input id="reward-video" class="admin-input mt-1 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-white"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center"><i class="fa-solid fa-arrows-spin"></i></div>
+                                <div class="flex-1 grid grid-cols-2 gap-4">
+                                    <div><label class="text-xs font-bold text-slate-400" data-i18n="limit">Limit</label><input id="limit-spin" class="admin-input mt-1 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-white"></div>
+                                    <div><label class="text-xs font-bold text-slate-400" data-i18n="point">Points</label><input id="reward-spin" class="admin-input mt-1 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-white"></div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                                <div class="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center"><i class="fa-solid fa-ticket"></i></div>
+                                <div class="flex-1 grid grid-cols-2 gap-4">
+                                    <div><label class="text-xs font-bold text-slate-400" data-i18n="limit">Limit</label><input id="limit-scratch" class="admin-input mt-1 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-white"></div>
+                                    <div><label class="text-xs font-bold text-slate-400" data-i18n="point">Points</label><input id="reward-scratch" class="admin-input mt-1 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-white"></div>
+                                </div>
+                            </div>
                         </div>
+                        <button onclick="saveLimits()" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:bg-indigo-700 transition w-full" data-i18n="save">Save Changes</button>
+                    </div>
+                </div>
+
+                <!-- 2. Notices Section -->
+                <div id="notices-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 p-6 max-w-3xl mx-auto">
+                        <h3 class="text-lg font-bold mb-4 text-slate-800 dark:text-white" data-i18n="notice_board">Notice Board</h3>
+                        <div class="flex gap-3 mb-6"><input type="text" id="notice-text" placeholder="Write notice..." class="flex-1 admin-input bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"><button onclick="addNotice()" class="bg-orange-500 text-white px-6 rounded-lg font-bold shadow hover:bg-orange-600" data-i18n="add">Add</button></div>
                         <ul id="notice-list" class="space-y-2"></ul>
                     </div>
+                </div>
 
-                    <!-- Instructions Section -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-blue-200">
-                        <h3 class="text-xl font-bold mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-circle-info text-blue-500"></i> টাস্ক ও উইথড্র নিয়মাবলী</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="text-sm font-bold text-gray-600">সোশ্যাল টাস্ক নিয়ম</label><textarea id="inst-social" rows="2" class="w-full p-2 border rounded mt-1 bg-gray-50"></textarea></div>
-                            <div><label class="text-sm font-bold text-gray-600">উইথড্র নিয়ম</label><textarea id="inst-withdraw" rows="2" class="w-full p-2 border rounded mt-1 bg-gray-50"></textarea></div>
-                            <div><label class="text-sm font-bold text-gray-600">ভিডিও অ্যাড নিয়ম</label><textarea id="inst-video" rows="2" class="w-full p-2 border rounded mt-1 bg-gray-50"></textarea></div>
-                            <div><label class="text-sm font-bold text-gray-600">স্পিন নিয়ম</label><textarea id="inst-spin" rows="2" class="w-full p-2 border rounded mt-1 bg-gray-50"></textarea></div>
-                            <div class="md:col-span-2"><label class="text-sm font-bold text-gray-600">স্ক্র্যাচ নিয়ম</label><textarea id="inst-scratch" rows="2" class="w-full p-2 border rounded mt-1 bg-gray-50"></textarea></div>
+                <!-- 3. Social Tasks Section -->
+                <div id="social-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 p-6">
+                        <h3 class="text-lg font-bold mb-4 text-slate-800 dark:text-white" data-i18n="social_task">Social Media Tasks</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6">
+                            <input id="social-title" placeholder="Title" class="admin-input bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white">
+                            <input id="social-link" placeholder="Link" class="admin-input bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white">
+                            <input id="social-reward" placeholder="Reward" class="admin-input bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white">
+                            <select id="social-type" class="admin-input bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"><option value="telegram">Telegram</option><option value="youtube">YouTube</option><option value="facebook">Facebook</option><option value="tiktok">TikTok</option></select>
                         </div>
-                        <button onclick="saveInstructions()" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-bold">সেভ করুন</button>
-                    </div>
-
-                    <!-- Daily Limits -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border">
-                        <h3 class="text-xl font-bold mb-4 border-b pb-2">ডেইলি লিমিট (0 = বন্ধ)</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="text-sm font-bold text-gray-600">ভিডিও অ্যাড</label><input type="number" id="limit-video" class="w-full p-2 border rounded mt-1 bg-gray-50"></div>
-                            <div><label class="text-sm font-bold text-gray-600">স্পিন</label><input type="number" id="limit-spin" class="w-full p-2 border rounded mt-1 bg-gray-50"></div>
-                            <div><label class="text-sm font-bold text-gray-600">স্ক্র্যাচ</label><input type="number" id="limit-scratch" class="w-full p-2 border rounded mt-1 bg-gray-50"></div>
-                        </div>
-                        <button onclick="saveLimits()" class="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg font-bold">সেভ করুন</button>
-                    </div>
-
-                    <!-- Social Tasks -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border">
-                        <h3 class="text-xl font-bold mb-4 border-b pb-2">সোশ্যাল মিডিয়া টাস্ক</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                            <input type="text" id="social-title" placeholder="টাইটেল" class="p-2 border rounded">
-                            <input type="text" id="social-link" placeholder="লিংক" class="p-2 border rounded">
-                            <input type="number" id="social-reward" placeholder="কয়েন" class="p-2 border rounded">
-                            <select id="social-type" class="p-2 border rounded">
-                                <option value="telegram">Telegram</option>
-                                <option value="youtube">YouTube</option>
-                                <option value="facebook">Facebook</option>
-                            </select>
-                        </div>
-                        <button onclick="addSocialTask()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold mb-6">যোগ করুন</button>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse"><thead class="bg-gray-100"><tr><th class="p-3">টাইটেল</th><th class="p-3">লিংক</th><th class="p-3">কয়েন</th><th class="p-3">অ্যাকশন</th></tr></thead><tbody id="social-task-list"></tbody></table>
-                        </div>
+                        <button onclick="addSocialTask()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold shadow hover:bg-indigo-700 mb-6" data-i18n="add">Add Task</button>
+                        <div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-xs uppercase"><tr><th class="p-3">Title</th><th class="p-3">Link</th><th class="p-3">Coin</th><th class="p-3">Action</th></tr></thead><tbody id="social-task-list" class="text-sm dark:text-slate-300"></tbody></table></div>
                     </div>
                 </div>
 
-                <!-- Settings & Payment Methods -->
-                <div id="settings-section" class="section hidden max-w-4xl mx-auto space-y-6">
-                    <!-- General Settings -->
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border">
-                        <h3 class="text-xl font-bold mb-4 border-b pb-2">জেনারেল সেটিংস</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="font-bold text-gray-700">ডেইলি বোনাস (কয়েন)</label><input type="number" id="daily-bonus" class="w-full p-3 border rounded-lg mt-1 bg-gray-50"></div>
-                            <div><label class="font-bold text-gray-700">মিনিমাম উত্তোলন (টাকা)</label><input type="number" id="min-withdraw" class="w-full p-3 border rounded-lg mt-1 bg-gray-50"></div>
-                            <div><label class="font-bold text-gray-700">অ্যাডমিন কন্টাক্ট লিংক</label><input type="text" id="admin-contact" class="w-full p-3 border rounded-lg mt-1 bg-gray-50"></div>
-                            <div><label class="font-bold text-gray-700">App Logo URL</label><input type="text" id="app-logo-url" placeholder="https://..." class="w-full p-3 border rounded-lg mt-1 bg-gray-50"></div>
+                <!-- 4. App Rules Section -->
+                <div id="rules-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 p-6 max-w-4xl mx-auto">
+                        <h3 class="text-lg font-bold mb-6 text-slate-800 dark:text-white" data-i18n="app_rules">Rules & Instructions</h3>
+                        <div class="grid gap-4">
+                            <div><label class="text-xs font-bold text-slate-500 dark:text-slate-400">Withdraw Rules</label><textarea id="inst-withdraw" rows="2" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></textarea></div>
+                            <div><label class="text-xs font-bold text-slate-500 dark:text-slate-400">Social Task Rules</label><textarea id="inst-social" rows="2" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></textarea></div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div><label class="text-xs font-bold text-slate-500 dark:text-slate-400">Video</label><textarea id="inst-video" rows="2" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></textarea></div>
+                                <div><label class="text-xs font-bold text-slate-500 dark:text-slate-400">Spin</label><textarea id="inst-spin" rows="2" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></textarea></div>
+                                <div><label class="text-xs font-bold text-slate-500 dark:text-slate-400">Scratch</label><textarea id="inst-scratch" rows="2" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></textarea></div>
+                            </div>
                         </div>
-                        <button onclick="saveGeneralSettings()" class="w-full bg-slate-900 text-white font-bold py-3 rounded-lg mt-4">আপডেট করুন</button>
-                    </div>
-
-                    <!-- Payment Methods Management -->
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border">
-                        <h3 class="text-xl font-bold mb-4 border-b pb-2">পেমেন্ট মেথড (লোগো সহ)</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                            <input type="text" id="pay-name" placeholder="নাম (যেমন: Bkash)" class="p-3 border rounded-lg bg-gray-50">
-                            <input type="text" id="pay-logo" placeholder="Logo URL (https://...)" class="p-3 border rounded-lg bg-gray-50">
-                            <button onclick="addPaymentMethod()" class="bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700">মেথড যোগ করুন</button>
-                        </div>
-                        <div class="text-xs text-gray-500 mb-4">* লোগো হিসেবে ইমেজের ডাইরেক্ট লিংক ব্যবহার করুন।</div>
-                        
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead class="bg-gray-100"><tr><th class="p-3">নাম</th><th class="p-3">লোগো</th><th class="p-3">অ্যাকশন</th></tr></thead>
-                                <tbody id="payment-methods-list"></tbody>
-                            </table>
-                        </div>
+                        <button onclick="saveInstructions()" class="mt-6 bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 w-full" data-i18n="save">Update Rules</button>
                     </div>
                 </div>
 
                 <!-- Withdrawals -->
-                <div id="withdrawals-section" class="section hidden">
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-                        <div class="p-5 border-b bg-gray-50"><h3 class="font-bold">পেমেন্ট রিকোয়েস্ট</h3></div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left"><thead class="bg-gray-100"><tr><th class="p-4">ইউজার</th><th class="p-4">মেথড</th><th class="p-4">নাম্বার</th><th class="p-4">টাকা</th><th class="p-4">অ্যাকশন</th></tr></thead><tbody id="withdrawal-table-body"></tbody></table>
+                <div id="withdrawals-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <div class="p-5 border-b border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0"><h3 class="font-bold text-slate-800 dark:text-white" data-i18n="pay_req">Payment Requests</h3></div>
+                        <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-300"><tr><th class="p-4">User</th><th class="p-4">Method</th><th class="p-4">Number</th><th class="p-4">Amount</th><th class="p-4">Status</th><th class="p-4">Action</th></tr></thead><tbody id="withdrawal-table-body" class="divide-y divide-gray-100 dark:divide-slate-700 dark:text-slate-300"></tbody></table></div>
+                    </div>
+                </div>
+
+                <!-- 5. Payment Methods Section -->
+                <div id="payments-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 p-6 max-w-3xl mx-auto">
+                        <h3 class="text-lg font-bold mb-4 text-slate-800 dark:text-white" data-i18n="pay_method">Manage Payment Methods</h3>
+                        <div class="flex gap-3 mb-6"><input id="pay-name" placeholder="Name" class="admin-input bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"><input id="pay-logo" placeholder="Logo URL" class="admin-input bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"><button onclick="addPaymentMethod()" class="bg-purple-600 text-white px-6 rounded-lg font-bold shadow hover:bg-purple-700" data-i18n="add">Add</button></div>
+                        <div id="payment-methods-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- 6. App Settings Section -->
+                <div id="app-settings-section" class="section hidden h-full overflow-y-auto p-4 md:p-8">
+                    <div class="premium-card bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 p-8 max-w-2xl mx-auto">
+                        <h3 class="text-lg font-bold mb-6 text-slate-800 dark:text-white" data-i18n="settings">Application Configuration</h3>
+                        <div class="space-y-4">
+                            <div><label class="text-sm font-bold text-slate-600 dark:text-slate-400">Min Withdraw (TK)</label><input id="min-withdraw" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></div>
+                            <div><label class="text-sm font-bold text-slate-600 dark:text-slate-400">Daily Bonus (Coins)</label><input id="daily-bonus" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></div>
+                            <div><label class="text-sm font-bold text-slate-600 dark:text-slate-400">Admin Contact Link</label><input id="admin-contact" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></div>
+                            <div><label class="text-sm font-bold text-slate-600 dark:text-slate-400">App Logo URL</label><input id="app-logo-url" class="admin-input mt-1 bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 dark:text-white"></div>
+                        </div>
+                        <button onclick="saveGeneralSettings()" class="w-full bg-slate-800 dark:bg-indigo-600 text-white py-3 rounded-xl mt-8 font-bold hover:bg-slate-900 dark:hover:bg-indigo-700 shadow-lg" data-i18n="save">Update Config</button>
+                    </div>
+                </div>
+
+                <!-- Chat Section (Full Screen) -->
+                <div id="chat-section" class="section hidden absolute inset-0 z-20 bg-white dark:bg-slate-900 flex">
+                    <div id="chat-list-panel" class="w-full md:w-80 lg:w-96 border-r border-gray-100 dark:border-slate-700 flex flex-col h-full bg-white dark:bg-slate-900 z-20">
+                        <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between"><h3 class="font-bold text-xl text-slate-800 dark:text-white" data-i18n="live_chat">Messages</h3></div>
+                        <div class="p-3 bg-white dark:bg-slate-900"><input type="text" placeholder="Search..." class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg py-2 pl-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 dark:text-white"></div>
+                        <div id="chat-users-list" class="flex-1 overflow-y-auto"></div>
+                    </div>
+                    <div id="chat-window-panel" class="fixed inset-0 md:static md:flex-1 bg-[#f0f2f5] dark:bg-slate-950 flex flex-col z-30 translate-x-full md:translate-x-0">
+                        <div class="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4 shadow-sm z-20">
+                            <div class="flex items-center gap-3">
+                                <button onclick="closeChatMobile()" class="md:hidden w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-white"><i class="fa-solid fa-arrow-left"></i></button>
+                                <div><h3 class="font-bold text-slate-800 dark:text-white text-sm" id="chat-current-user-name">Select User</h3><span class="text-[10px] text-green-500 font-bold">Online</span></div>
+                            </div>
+                        </div>
+                        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-2"></div>
+                        <div class="p-4 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex items-end gap-3">
+                            <input id="admin-chat-input" class="flex-1 bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white" placeholder="Type message..." onkeypress="handleEnter(event)">
+                            <button onclick="adminSendMessage()" id="admin-chat-btn" class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow hover:bg-indigo-700"><i class="fa-solid fa-paper-plane text-sm"></i></button>
                         </div>
                     </div>
                 </div>
+
             </main>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script type="module">
         const firebaseConfig = {
           apiKey: "AIzaSyDw0dG76LvkhW0-qKLxWDyTAdMcGAuFmjM",
@@ -203,56 +339,105 @@
         };
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, collection, onSnapshot, query, where, addDoc, serverTimestamp, increment, limit } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, collection, onSnapshot, query, where, addDoc, serverTimestamp, increment, limit, orderBy } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Auth
+        let currentChatUserId = null;
+        let chatUnsub = null;
+
+        // --- TRANSLATIONS ---
+        const translations = {
+            en: {
+                admin_login: "Admin Login", login_btn: "Access Dashboard", overview: "Overview", dashboard: "Dashboard", user_list: "User List", task_management: "Task Management", task_limits: "Task Limits", notice_board: "Notice Board", social_task: "Social Tasks", app_rules: "App Rules", finance: "Finance", pay_req: "Payment Requests", pay_method: "Payment Methods", system: "System", live_chat: "Live Chat", settings: "App Settings", logout: "Logout", total_users: "Total Users", pending_pay: "Pending Payments", name: "Name", email: "Email", refer: "Refer", balance: "Balance", limit: "Limit", point: "Points", save: "Save Changes", add: "Add", mode: "Mode"
+            },
+            bn: {
+                admin_login: "অ্যাডমিন লগিন", login_btn: "ড্যাশবোর্ডে প্রবেশ করুন", overview: "ওভারভিউ", dashboard: "ড্যাশবোর্ড", user_list: "ইউজার লিস্ট", task_management: "টাস্ক ম্যানেজমেন্ট", task_limits: "টাস্ক লিমিট", notice_board: "নোটিশ বোর্ড", social_task: "সোশ্যাল টাস্ক", app_rules: "অ্যাপের নিয়ম", finance: "ফাইন্যান্স", pay_req: "পেমেন্ট রিকোয়েস্ট", pay_method: "পেমেন্ট মেথড", system: "সিস্টেম", live_chat: "লাইভ চ্যাট", settings: "অ্যাপ সেটিংস", logout: "লগআউট", total_users: "মোট ইউজার", pending_pay: "পেন্ডিং পেমেন্ট", name: "নাম", email: "ইমেইল", refer: "রেফার", balance: "ব্যালেন্স", limit: "লিমিট", point: "পয়েন্ট", save: "সেভ করুন", add: "যোগ করুন", mode: "মোড"
+            }
+        };
+
+        // --- THEME & LANG LOGIC ---
+        window.currentLang = localStorage.getItem('adminLang') || 'bn';
+        window.currentTheme = localStorage.getItem('adminTheme') || 'light';
+
+        window.applyTheme = () => {
+            if(window.currentTheme === 'dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        }
+        window.toggleTheme = () => {
+            window.currentTheme = window.currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('adminTheme', window.currentTheme);
+            applyTheme();
+        }
+
+        window.applyLanguage = () => {
+            document.getElementById('lang-display').innerText = window.currentLang.toUpperCase();
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if(translations[window.currentLang][key]) el.innerText = translations[window.currentLang][key];
+            });
+        }
+        window.toggleLanguage = () => {
+            window.currentLang = window.currentLang === 'en' ? 'bn' : 'en';
+            localStorage.setItem('adminLang', window.currentLang);
+            applyLanguage();
+        }
+
+        // Init Theme & Lang
+        applyTheme();
+        applyLanguage();
+
+        // --- AUTH ---
         window.adminLogin = async () => {
             try { await signInWithEmailAndPassword(auth, document.getElementById('admin-email').value, document.getElementById('admin-pass').value); } 
-            catch(e) { Swal.fire('Error', 'ভুল তথ্য', 'error'); }
+            catch(e) { Swal.fire('Error', 'Invalid Credentials', 'error'); }
         };
         window.adminLogout = () => signOut(auth).then(()=> location.reload());
+        
         onAuthStateChanged(auth, (user) => {
             if(user) {
                 document.getElementById('admin-login-overlay').classList.add('hidden');
                 document.getElementById('admin-wrapper').classList.remove('hidden');
-                loadConfig(); initListeners();
-            } else {
-                document.getElementById('admin-login-overlay').classList.remove('hidden');
-                document.getElementById('admin-wrapper').classList.add('hidden');
+                loadConfig(); initListeners(); initChatSystem();
             }
         });
 
-        window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('sidebar-closed'); };
+        // UI Nav
+        window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('sidebar-closed');
         window.showSection = (id, btn) => {
             document.querySelectorAll('.section').forEach(el => el.classList.add('hidden'));
             document.getElementById(id + '-section').classList.remove('hidden');
-            document.querySelectorAll('.nav-link').forEach(el => { el.classList.remove('sidebar-active', 'text-white'); el.classList.add('text-slate-400'); });
-            btn.classList.add('sidebar-active', 'text-white'); btn.classList.remove('text-slate-400');
+            document.querySelectorAll('.nav-link').forEach(el => { el.classList.remove('sidebar-active'); el.classList.add('text-slate-400', 'hover:bg-gray-800', 'hover:text-white'); });
+            if(btn) { btn.classList.add('sidebar-active'); btn.classList.remove('text-slate-400', 'hover:bg-gray-800', 'hover:text-white'); }
+            if(window.innerWidth < 768) document.getElementById('sidebar').classList.add('sidebar-closed');
         };
+        window.openChatMobile = () => document.getElementById('chat-window-panel').classList.remove('translate-x-full');
+        window.closeChatMobile = () => document.getElementById('chat-window-panel').classList.add('translate-x-full');
 
-        // Data
+        // Data Loading
         async function loadConfig() {
             const snap = await getDoc(doc(db, "config", "main"));
             if (snap.exists()) {
                 const data = snap.data();
                 document.getElementById('limit-video').value = data.limits?.video || 0;
+                document.getElementById('reward-video').value = data.rewards?.video || 50;
                 document.getElementById('limit-spin').value = data.limits?.spin || 0;
+                document.getElementById('reward-spin').value = data.rewards?.spin || 20;
                 document.getElementById('limit-scratch').value = data.limits?.scratch || 0;
+                document.getElementById('reward-scratch').value = data.rewards?.scratch || 30;
                 document.getElementById('min-withdraw').value = data.minWithdraw || 50;
                 document.getElementById('daily-bonus').value = data.dailyBonus || 100;
                 document.getElementById('admin-contact').value = data.contactLink || '';
                 document.getElementById('app-logo-url').value = data.logoUrl || ''; 
                 
-                const instructions = data.instructions || {};
-                document.getElementById('inst-social').value = instructions.social || '';
-                document.getElementById('inst-withdraw').value = instructions.withdraw || '';
-                document.getElementById('inst-video').value = instructions.video || '';
-                document.getElementById('inst-spin').value = instructions.spin || '';
-                document.getElementById('inst-scratch').value = instructions.scratch || '';
+                const inst = data.instructions || {};
+                document.getElementById('inst-social').value = inst.social || '';
+                document.getElementById('inst-withdraw').value = inst.withdraw || '';
+                document.getElementById('inst-video').value = inst.video || '';
+                document.getElementById('inst-spin').value = inst.spin || '';
+                document.getElementById('inst-scratch').value = inst.scratch || '';
 
                 renderSocialList(data.socialTasks || []);
                 renderNoticeList(data.notices || []);
@@ -260,171 +445,185 @@
             }
         }
 
-        // --- PAYMENT METHODS LOGIC (UPDATED WITH LOGO) ---
-        window.addPaymentMethod = async () => {
-            const name = document.getElementById('pay-name').value;
-            const logo = document.getElementById('pay-logo').value;
-            if(!name || !logo) return Swal.fire('Error', 'নাম এবং লোগো লিংক দিন', 'warning');
-            
-            const newMethod = { id: Date.now().toString(), name, logo };
-            await updateDoc(doc(db, "config", "main"), { paymentMethods: arrayUnion(newMethod) });
-            
-            document.getElementById('pay-name').value = '';
-            document.getElementById('pay-logo').value = '';
-            
-            // Success Message Only (NO RELOAD)
-            Swal.fire({
-                title: 'Success',
-                text: 'পেমেন্ট মেথড যোগ হয়েছে',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            loadConfig(); // Refresh data manually
+        // Action Functions
+        window.saveLimits = async () => {
+            const limits = { video: parseInt(document.getElementById('limit-video').value), spin: parseInt(document.getElementById('limit-spin').value), scratch: parseInt(document.getElementById('limit-scratch').value) };
+            const rewards = { video: parseInt(document.getElementById('reward-video').value), spin: parseInt(document.getElementById('reward-spin').value), scratch: parseInt(document.getElementById('reward-scratch').value) };
+            await setDoc(doc(db, "config", "main"), { limits, rewards }, { merge: true });
+            Swal.fire({icon:'success', title:'Limits Saved', timer:1500, showConfirmButton:false});
         };
-
-        window.deletePaymentMethod = async (id) => {
-            const snap = await getDoc(doc(db, "config", "main"));
-            const methods = snap.data().paymentMethods || [];
-            const updated = methods.filter(m => m.id !== id);
-            await updateDoc(doc(db, "config", "main"), { paymentMethods: updated });
-            renderPaymentMethods(updated);
-            Swal.fire('Deleted', 'ডিলিট হয়েছে', 'success');
+        window.saveGeneralSettings = async () => {
+            await setDoc(doc(db, "config", "main"), { 
+                minWithdraw: parseInt(document.getElementById('min-withdraw').value),
+                dailyBonus: parseInt(document.getElementById('daily-bonus').value),
+                contactLink: document.getElementById('admin-contact').value,
+                logoUrl: document.getElementById('app-logo-url').value
+            }, { merge: true });
+            Swal.fire({icon:'success', title:'Settings Updated', timer:1500, showConfirmButton:false});
         };
-
-        function renderPaymentMethods(methods) {
-            const tbody = document.getElementById('payment-methods-list');
-            tbody.innerHTML = '';
-            methods.forEach(m => {
-                tbody.innerHTML += `
-                    <tr class="border-b">
-                        <td class="p-3 font-bold">${m.name}</td>
-                        <td class="p-3"><img src="${m.logo}" class="w-10 h-10 object-contain border rounded p-1"></td>
-                        <td class="p-3"><button onclick="deletePaymentMethod('${m.id}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td>
-                    </tr>
-                `;
-            });
-        }
-        // ------------------------------------
-
-        // Instructions Save Function
         window.saveInstructions = async () => {
-            const instructions = {
-                social: document.getElementById('inst-social').value,
-                withdraw: document.getElementById('inst-withdraw').value,
-                video: document.getElementById('inst-video').value,
-                spin: document.getElementById('inst-spin').value,
-                scratch: document.getElementById('inst-scratch').value
-            };
+            const instructions = { social: document.getElementById('inst-social').value, withdraw: document.getElementById('inst-withdraw').value, video: document.getElementById('inst-video').value, spin: document.getElementById('inst-spin').value, scratch: document.getElementById('inst-scratch').value };
             await setDoc(doc(db, "config", "main"), { instructions }, { merge: true });
-            Swal.fire('Success', 'নিয়মাবলী সেভ হয়েছে', 'success');
+            Swal.fire({icon:'success', title:'Rules Saved', timer:1500, showConfirmButton:false});
         };
 
-        // Notices
         window.addNotice = async () => {
-            const text = document.getElementById('notice-text').value;
-            if(!text) return Swal.fire('Error', 'নোটিশ লিখুন', 'warning');
-            const snap = await getDoc(doc(db, "config", "main"));
-            const currentNotices = snap.data().notices || [];
-            if(currentNotices.length > 0) return Swal.fire('Error', 'আগের নোটিশ ডিলিট না করা পর্যন্ত নতুন নোটিশ দেওয়া যাবে না', 'error');
-            const newNotice = { id: Date.now().toString(), text };
-            await updateDoc(doc(db, "config", "main"), { notices: arrayUnion(newNotice) });
-            document.getElementById('notice-text').value = '';
-            Swal.fire('Success', 'নোটিশ যোগ হয়েছে', 'success').then(()=> loadConfig());
-        }
+            await updateDoc(doc(db, "config", "main"), { notices: arrayUnion({ id: Date.now().toString(), text: document.getElementById('notice-text').value }) });
+            document.getElementById('notice-text').value=''; loadConfig();
+        };
         window.deleteNotice = async (id) => {
             const snap = await getDoc(doc(db, "config", "main"));
-            const notices = snap.data().notices || [];
-            const updated = notices.filter(n => n.id !== id);
-            await updateDoc(doc(db, "config", "main"), { notices: updated });
-            renderNoticeList(updated);
-            Swal.fire('Deleted', 'ডিলিট হয়েছে', 'success');
-        }
-        function renderNoticeList(notices) {
-            const ul = document.getElementById('notice-list');
-            ul.innerHTML = '';
-            notices.forEach(n => {
-                ul.innerHTML += `<li class="flex justify-between bg-gray-50 p-2 rounded border border-gray-200"><span>${n.text}</span><button onclick="deleteNotice('${n.id}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button></li>`;
-            });
-        }
+            await updateDoc(doc(db, "config", "main"), { notices: (snap.data().notices||[]).filter(n=>n.id!==id) });
+            loadConfig();
+        };
+        function renderNoticeList(list) { document.getElementById('notice-list').innerHTML = list.map(n=>`<li class="flex justify-between bg-slate-50 dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-200 shadow-sm"><span>${n.text}</span><button onclick="deleteNotice('${n.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button></li>`).join(''); }
 
-        // Social Tasks
         window.addSocialTask = async () => {
-            const title = document.getElementById('social-title').value;
-            const link = document.getElementById('social-link').value;
-            const reward = parseInt(document.getElementById('social-reward').value);
-            const type = document.getElementById('social-type').value;
-            if(!title || !link || !reward) return Swal.fire('Error', 'তথ্য দিন', 'warning');
-            const newTask = { id: Date.now().toString(), title, link, reward, type };
-            await updateDoc(doc(db, "config", "main"), { socialTasks: arrayUnion(newTask) });
-            Swal.fire('Added', 'টাস্ক যুক্ত হয়েছে।', 'success').then(()=> loadConfig());
+            const task = { id: Date.now().toString(), title: document.getElementById('social-title').value, link: document.getElementById('social-link').value, reward: parseInt(document.getElementById('social-reward').value), type: document.getElementById('social-type').value };
+            await updateDoc(doc(db, "config", "main"), { socialTasks: arrayUnion(task) });
+            loadConfig();
         };
         window.deleteSocialTask = async (id) => {
             const snap = await getDoc(doc(db, "config", "main"));
-            const tasks = snap.data().socialTasks || [];
-            const updated = tasks.filter(t => t.id !== id);
-            await updateDoc(doc(db, "config", "main"), { socialTasks: updated });
-            renderSocialList(updated);
-            Swal.fire('Deleted', 'ডিলিট হয়েছে', 'success');
-        }
-        function renderSocialList(tasks) {
-            const tbody = document.getElementById('social-task-list');
-            tbody.innerHTML = '';
-            tasks.forEach(t => {
-                tbody.innerHTML += `<tr class="border-b"><td class="p-3">${t.title} <span class="bg-gray-200 text-xs px-1 rounded uppercase">${t.type}</span></td><td class="p-3 text-blue-500 truncate max-w-xs">${t.link}</td><td class="p-3 font-bold text-green-600">${t.reward}</td><td class="p-3"><button onclick="deleteSocialTask('${t.id}')" class="text-red-500"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-            });
+            await updateDoc(doc(db, "config", "main"), { socialTasks: (snap.data().socialTasks||[]).filter(t=>t.id!==id) });
+            loadConfig();
+        };
+        function renderSocialList(list) { 
+            document.getElementById('social-task-list').innerHTML = list.map(t=>`
+                <tr class="border-b border-gray-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition">
+                    <td class="p-3 font-medium text-slate-700 dark:text-slate-300">${t.title} <span class="bg-indigo-50 dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 text-[10px] px-2 py-0.5 rounded ml-1 uppercase">${t.type}</span></td>
+                    <td class="p-3 text-blue-500 truncate max-w-xs"><a href="${t.link}" target="_blank" class="hover:underline">${t.link}</a></td>
+                    <td class="p-3 font-bold text-green-600">+${t.reward}</td>
+                    <td class="p-3"><button onclick="deleteSocialTask('${t.id}')" class="text-red-400 hover:bg-red-50 p-2 rounded-full"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`).join(''); 
         }
 
-        // Settings
-        window.saveLimits = async () => {
-            const limits = { video: parseInt(document.getElementById('limit-video').value), spin: parseInt(document.getElementById('limit-spin').value), scratch: parseInt(document.getElementById('limit-scratch').value) };
-            await setDoc(doc(db, "config", "main"), { limits }, { merge: true });
-            Swal.fire('Success', 'সেভ হয়েছে', 'success');
+        window.addPaymentMethod = async () => {
+            await updateDoc(doc(db, "config", "main"), { paymentMethods: arrayUnion({ id: Date.now().toString(), name: document.getElementById('pay-name').value, logo: document.getElementById('pay-logo').value }) });
+            loadConfig();
         };
-        window.saveGeneralSettings = async () => {
-            const minWithdraw = parseInt(document.getElementById('min-withdraw').value);
-            const dailyBonus = parseInt(document.getElementById('daily-bonus').value);
-            const contactLink = document.getElementById('admin-contact').value;
-            const logoUrl = document.getElementById('app-logo-url').value;
-            await setDoc(doc(db, "config", "main"), { minWithdraw, dailyBonus, contactLink, logoUrl }, { merge: true });
-            Swal.fire('Success', 'আপডেট হয়েছে', 'success');
+        window.deletePaymentMethod = async (id) => {
+            const snap = await getDoc(doc(db, "config", "main"));
+            await updateDoc(doc(db, "config", "main"), { paymentMethods: (snap.data().paymentMethods||[]).filter(m=>m.id!==id) });
+            loadConfig();
         };
+        function renderPaymentMethods(list) { 
+            document.getElementById('payment-methods-list').innerHTML = list.map(m=>`
+                <div class="flex justify-between items-center bg-white dark:bg-slate-700 p-3 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm">
+                    <div class="flex items-center gap-3"><img src="${m.logo}" class="w-8 h-8 object-contain bg-slate-50 rounded p-1 border"><span class="font-bold text-slate-700 dark:text-white">${m.name}</span></div>
+                    <button onclick="deletePaymentMethod('${m.id}')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-trash"></i></button>
+                </div>`).join(''); 
+        }
 
         // Listeners
         function initListeners() {
             onSnapshot(collection(db, "users"), snap => {
                 document.getElementById('stat-total-users').innerText = snap.size;
-                const tbody = document.getElementById('users-table-body');
-                tbody.innerHTML = '';
-                snap.docs.slice(0, 50).forEach(d => {
-                    const u = d.data();
-                    tbody.innerHTML += `<tr><td class="p-4 font-bold">${u.name}</td><td class="p-4 text-gray-500">${u.email}</td><td class="p-4 font-mono">${u.referralCode}</td><td class="p-4 font-bold text-green-600">${u.balance}</td></tr>`;
-                });
+                document.getElementById('users-table-body').innerHTML = snap.docs.slice(0,50).map(d=> { const u=d.data(); return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-700 transition"><td class="p-4 font-bold text-slate-700 dark:text-slate-200">${u.name}</td><td class="p-4 text-slate-500 dark:text-slate-400">${u.email}</td><td class="p-4 text-indigo-500 font-mono">${u.referralCode}</td><td class="p-4 font-bold text-green-600">${u.balance}</td></tr>`; }).join('');
             });
+
             onSnapshot(query(collection(db, "withdrawals"), where("status", "==", "pending")), snap => {
                 document.getElementById('stat-pending-withdraw').innerText = snap.size;
+                const badge = document.getElementById('nav-pending-count');
+                if(snap.size > 0) { badge.innerText = snap.size; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+            });
+
+            onSnapshot(query(collection(db, "withdrawals"), orderBy("requestedAt", "desc"), limit(50)), snap => {
                 const tbody = document.getElementById('withdrawal-table-body');
-                tbody.innerHTML = snap.empty ? '<tr><td colspan="5" class="p-4 text-center text-gray-400">খালি</td></tr>' : '';
+                tbody.innerHTML = snap.empty ? '<tr><td colspan="6" class="p-6 text-center text-slate-400">No Data Found</td></tr>' : '';
                 snap.forEach(d => {
                     const w = d.data();
-                    tbody.innerHTML += `<tr class="border-b hover:bg-gray-50"><td class="p-4">${w.userName}</td><td class="p-4"><span class="bg-blue-100 text-blue-800 px-2 rounded text-xs">${w.method}</span></td><td class="p-4 font-mono">${w.paymentDetail}</td><td class="p-4 font-bold">৳ ${w.amount}</td><td class="p-4 space-x-2"><button onclick="processPayment('${d.id}', 'approved')" class="bg-green-500 text-white px-2 py-1 rounded text-xs">Approve</button><button onclick="processPayment('${d.id}', 'rejected')" class="bg-red-500 text-white px-2 py-1 rounded text-xs">Reject</button></td></tr>`;
+                    let statusHtml = `<span class="bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide">${w.status}</span>`;
+                    let actionsHtml = `<span class="text-slate-300 text-xl">-</span>`;
+
+                    if(w.status === 'pending') {
+                        statusHtml = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide">Pending</span>`;
+                        actionsHtml = `
+                            <button onclick="processPayment('${d.id}', 'approved')" class="bg-green-500 text-white w-7 h-7 rounded shadow hover:scale-110 mr-2"><i class="fa-solid fa-check text-xs"></i></button>
+                            <button onclick="processPayment('${d.id}', 'rejected')" class="bg-red-500 text-white w-7 h-7 rounded shadow hover:scale-110"><i class="fa-solid fa-xmark text-xs"></i></button>
+                        `;
+                    } else if(w.status === 'approved') statusHtml = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide">Approved</span>`;
+                    else if(w.status === 'rejected') statusHtml = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold uppercase tracking-wide">Rejected</span>`;
+
+                    tbody.innerHTML += `<tr class="border-b border-gray-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition"><td class="p-4 font-bold text-slate-700 dark:text-slate-200">${w.userName}</td><td class="p-4"><span class="bg-white dark:bg-slate-600 border dark:border-slate-500 text-slate-600 dark:text-slate-200 px-2 py-1 rounded text-xs font-bold">${w.method}</span></td><td class="p-4 font-mono text-slate-500 dark:text-slate-400 select-all">${w.paymentDetail}</td><td class="p-4 font-bold text-slate-800 dark:text-slate-200">৳ ${w.amount}</td><td class="p-4">${statusHtml}</td><td class="p-4">${actionsHtml}</td></tr>`;
                 });
             });
         }
 
         window.processPayment = async (id, status) => {
-            Swal.fire({ title: 'নিশ্চিত?', showCancelButton: true, confirmButtonText: 'হ্যাঁ' }).then(async (result) => {
-                if (result.isConfirmed) {
-                    const ref = doc(db, "withdrawals", id);
-                    if(status === 'rejected') {
-                        const snap = await getDoc(ref);
-                        const userRef = doc(db, "users", snap.data().userId);
-                        await updateDoc(userRef, { balance: increment(snap.data().amount * 100) });
-                    }
-                    await updateDoc(ref, { status });
-                    Swal.fire('Done', '', 'success');
+            const ref = doc(db, "withdrawals", id);
+            if(status === 'rejected') {
+                const snap = await getDoc(ref);
+                if(snap.exists()) {
+                    const userRef = doc(db, "users", snap.data().userId);
+                    await updateDoc(userRef, { balance: increment(snap.data().amount * 100) });
                 }
+            }
+            await updateDoc(ref, { status });
+            Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 1500}).fire({icon: 'success', title: 'Updated'});
+        };
+
+        // Chat
+        function initChatSystem() {
+            onSnapshot(query(collection(db, "chats"), orderBy("lastMessageTime", "desc")), snap => {
+                document.getElementById('chat-users-list').innerHTML = snap.docs.map(d => {
+                    const data = d.data();
+                    const unread = data.unreadCount > 0 ? `<div class="w-2.5 h-2.5 bg-indigo-500 rounded-full shadow-lg shadow-indigo-500/50 animate-pulse"></div>` : '';
+                    const time = data.lastMessageTime ? new Date(data.lastMessageTime.seconds*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+                    return `
+                        <div onclick="openChat('${d.id}', '${data.userName}', this)" class="chat-item p-4 border-b border-gray-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex gap-3 items-center group transition-colors">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform">
+                                ${(data.userName||'U')[0]}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-center mb-0.5">
+                                    <h4 class="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">${data.userName}</h4>
+                                    <span class="text-[10px] text-slate-400 font-medium">${time}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 truncate w-32 ${data.unreadCount > 0 ? 'font-bold text-slate-800 dark:text-white' : ''}">${data.lastMessage}</p>
+                                    ${unread}
+                                </div>
+                                <p class="text-[9px] text-slate-300 font-mono mt-1 group-hover:text-indigo-500 transition">ID: ${d.id}</p>
+                            </div>
+                        </div>`;
+                }).join('');
+                
+                const count = snap.docs.reduce((acc, d) => acc + (d.data().unreadCount || 0), 0);
+                const badge = document.getElementById('nav-unread-badge');
+                if(count > 0) { badge.innerText = count; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
             });
+        }
+
+        window.openChat = async (uid, name, el) => {
+            currentChatUserId = uid;
+            document.getElementById('chat-current-user-name').innerText = name;
+            document.querySelectorAll('.chat-item').forEach(e => e.classList.remove('bg-indigo-50', 'dark:bg-slate-800', 'border-l-4', 'border-indigo-500'));
+            if(el) el.classList.add('bg-indigo-50', 'dark:bg-slate-800', 'border-l-4', 'border-indigo-500');
+            openChatMobile();
+            await updateDoc(doc(db, "chats", uid), { unreadCount: 0 });
+            
+            if(chatUnsub) chatUnsub();
+            chatUnsub = onSnapshot(query(collection(db, "chats", uid, "messages"), orderBy("timestamp", "asc")), snap => {
+                const box = document.getElementById('chat-messages');
+                box.innerHTML = snap.docs.map(d => {
+                    const m = d.data();
+                    const cls = m.sender === 'user' ? 'msg-user bg-white dark:bg-slate-700 dark:text-white dark:border-slate-600' : 'msg-admin';
+                    const align = m.sender === 'user' ? 'items-start' : 'items-end';
+                    return `<div class="flex flex-col ${align} mb-3 animate-[fadeIn_0.2s_ease-out]"><div class="msg-bubble ${cls}">${m.text}</div></div>`;
+                }).join('');
+                box.scrollTop = box.scrollHeight;
+            });
+        };
+
+        window.handleEnter = (e) => { if(e.key === 'Enter') adminSendMessage(); }
+        window.adminSendMessage = async () => {
+            const txt = document.getElementById('admin-chat-input').value.trim();
+            if(!txt || !currentChatUserId) return;
+            document.getElementById('admin-chat-input').value = '';
+            const ts = serverTimestamp();
+            await addDoc(collection(db, "chats", currentChatUserId, "messages"), { text: txt, sender: 'admin', timestamp: ts });
+            await updateDoc(doc(db, "chats", currentChatUserId), { lastMessage: "You: "+txt, lastMessageTime: ts });
         };
     </script>
 </body>
